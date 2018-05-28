@@ -1,7 +1,7 @@
 package com.developersam.fp
 
 /**
- * [FpList] is the functional set.
+ * [FpSet] is the functional set.
  *
  * @param m the backing map for the set.
  * @param V the type of values in the set.

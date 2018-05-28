@@ -1,7 +1,7 @@
 package com.developersam.fp
 
 /**
- * [FpList] is the functional map.
+ * [FpMap] is the functional map.
  *
  * @param K the type of keys in the map.
  * @param V the type of values in the map.
