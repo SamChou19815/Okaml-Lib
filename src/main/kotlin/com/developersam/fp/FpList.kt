@@ -1,7 +1,5 @@
 package com.developersam.fp
 
-import java.util.LinkedList
-
 /**
  * [FpList] is the functional list.
  *
