@@ -6,7 +6,7 @@ package com.developersam.fp
  * @param m the backing map for the set.
  * @param V the type of values in the set.
  */
-class FpSet<V : Comparable<V>> private constructor(private val m: FpMap<V, Unit>) {
+class FpSet<V : Comparable<V>> private constructor(private val m: FpMap<V, Unit>) : Iterable<V> {
 
     /**
      * [isEmpty] reports whether this set is empty.
@@ -121,6 +121,8 @@ class FpSet<V : Comparable<V>> private constructor(private val m: FpMap<V, Unit>
      */
     fun peek(): V? = m.peek()?.first
 
+    override fun iterator(): Iterator<V> = m.bindings.asSequence().map { it.first }.iterator()
+
     companion object {
 
         /**
@@ -138,12 +140,19 @@ class FpSet<V : Comparable<V>> private constructor(private val m: FpMap<V, Unit>
         /**
          * [create] creates a set from the given [values] in variable arguments.
          */
-        fun <K : Comparable<K>, V> create(vararg values: V): FpMap<K, V> = TODO()
+        fun <V : Comparable<V>> create(vararg values: V): FpSet<V> {
+            var set = empty<V>()
+            for (v in values) {
+                set = set.add(value = v)
+            }
+            return set
+        }
 
         /**
-         * [create] creates a set from the given [pairs] in list.
+         * [create] creates a set from the given [list].
          */
-        fun <K : Comparable<K>, V> create(pairs: FpList<V>): FpMap<K, V> = TODO()
+        fun <V : Comparable<V>> create(list: FpList<V>): FpSet<V> =
+                list.reduceFromLeft(acc = empty()) { acc, v -> acc.add(value = v) }
 
     }
 

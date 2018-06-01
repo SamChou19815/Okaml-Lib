@@ -6,7 +6,7 @@ package com.developersam.fp
  * @param K the type of keys in the map.
  * @param V the type of values in the map.
  */
-sealed class FpMap<K : Comparable<K>, V> {
+sealed class FpMap<K : Comparable<K>, V> : Iterable<Pair<K, V>> {
 
     /**
      * [Leaf] represents the leaf node.
@@ -298,6 +298,8 @@ sealed class FpMap<K : Comparable<K>, V> {
                 val result = f(k, v)
                 acc.put(key = result.first, value = result.second)
             }
+
+    override fun iterator(): Iterator<Pair<K, V>> = this.bindings.iterator()
 
     companion object {
 

@@ -17,7 +17,7 @@ repositories {
     maven { url "https://jitpack.io" }
 }
 dependencies {
-    compile 'com.github.SamChou19815:okaml-lib:0.1.0'
+    compile 'com.github.SamChou19815:okaml-lib:0.2.0'
 }
 ```
 

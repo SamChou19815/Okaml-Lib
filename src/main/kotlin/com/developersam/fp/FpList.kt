@@ -5,7 +5,7 @@ package com.developersam.fp
  *
  * @param T the type of elements in the list.
  */
-sealed class FpList<out T> {
+sealed class FpList<out T> : Iterable<T> {
 
     /**
      * [Nil] is equivalent to `[]`, the nil node in the list.
@@ -20,6 +20,20 @@ sealed class FpList<out T> {
      * [Node] with [data] and pointer to [next] is equivalent to [data] `::` [next].
      */
     data class Node<T>(val data: T, val next: FpList<T>) : FpList<T>()
+
+    override fun iterator(): Iterator<T> = object : Iterator<T> {
+
+        private var curr: FpList<T> = this@FpList
+
+        override fun hasNext(): Boolean = curr != Nil
+
+        override fun next(): T {
+            val immutableCurr = curr as? Node<T> ?: error(message = "Wrong use of iterator!")
+            val data = immutableCurr.data
+            curr = immutableCurr.next
+            return data
+        }
+    }
 
     companion object {
         /**
