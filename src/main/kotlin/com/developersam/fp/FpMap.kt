@@ -61,8 +61,8 @@ sealed class FpMap<K : Comparable<K>, V> : Iterable<Pair<K, V>> {
         get() = when (this) {
             Leaf -> true
             is Node<K, V> -> Math.abs(left.height - right.height) < 2
-                        && left.avlInvariantHolds
-                        && right.avlInvariantHolds
+                    && left.avlInvariantHolds
+                    && right.avlInvariantHolds
         }
 
     /**
@@ -298,6 +298,8 @@ sealed class FpMap<K : Comparable<K>, V> : Iterable<Pair<K, V>> {
                 val result = f(k, v)
                 acc.put(key = result.first, value = result.second)
             }
+
+    override fun toString(): String = map { (k, v) -> "($k, $v)" }.toString()
 
     override fun iterator(): Iterator<Pair<K, V>> = this.bindings.iterator()
 

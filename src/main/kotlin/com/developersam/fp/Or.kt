@@ -8,6 +8,12 @@ package com.developersam.fp
  */
 sealed class Or<out A, out B> {
 
+    override fun toString(): String =
+            when (this) {
+                is First<A> -> "[Or.First: $data]"
+                is Second<B> -> "[Or.Second: $data]"
+            }
+
     /**
      * [First] represents the first choice with [data].
      *

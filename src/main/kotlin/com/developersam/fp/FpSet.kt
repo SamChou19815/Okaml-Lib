@@ -122,6 +122,8 @@ class FpSet<V : Comparable<V>> private constructor(private val m: FpMap<V, Unit>
      */
     fun peek(): V? = m.peek()?.first
 
+    override fun toString(): String = toList().toString()
+
     override fun iterator(): Iterator<V> = m.bindings.asSequence().map { it.first }.iterator()
 
     companion object {

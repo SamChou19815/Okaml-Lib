@@ -156,6 +156,8 @@ sealed class FpList<out T> : Iterable<T> {
         is Node<T> -> if (f(data)) true else next.exists(f = f)
     }
 
+    override fun toString(): String = toArrayList().toString()
+
 }
 
 /**
