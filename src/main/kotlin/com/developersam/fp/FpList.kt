@@ -11,7 +11,6 @@ sealed class FpList<out T> : Iterable<T> {
      * [Nil] is equivalent to `[]`, the nil node in the list.
      */
     object Nil : FpList<Nothing>() {
-        override fun toString(): String = "Nil"
         override fun equals(other: Any?): Boolean = this === Nil
         override fun hashCode(): Int = 42
     }
@@ -156,7 +155,7 @@ sealed class FpList<out T> : Iterable<T> {
         is Node<T> -> if (f(data)) true else next.exists(f = f)
     }
 
-    override fun toString(): String = toArrayList().toString()
+    final override fun toString(): String = toList().toString()
 
 }
 

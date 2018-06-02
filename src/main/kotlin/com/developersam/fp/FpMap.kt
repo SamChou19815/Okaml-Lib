@@ -13,7 +13,6 @@ sealed class FpMap<K : Comparable<K>, V> : Iterable<Pair<K, V>> {
      */
     private object Leaf : FpMap<Nothing, Nothing>() {
         override val height: Int = 0
-        override fun toString(): String = "Leaf"
         override fun equals(other: Any?): Boolean = this === Leaf
         override fun hashCode(): Int = 42
     }
@@ -299,7 +298,7 @@ sealed class FpMap<K : Comparable<K>, V> : Iterable<Pair<K, V>> {
                 acc.put(key = result.first, value = result.second)
             }
 
-    override fun toString(): String = map { (k, v) -> "($k, $v)" }.toString()
+    final override fun toString(): String = map { (k, v) -> "($k, $v)" }.toString()
 
     override fun iterator(): Iterator<Pair<K, V>> = this.bindings.iterator()
 
