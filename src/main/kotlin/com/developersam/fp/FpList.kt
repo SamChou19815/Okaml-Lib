@@ -18,6 +18,10 @@ sealed class FpList<out T> : Iterable<T> {
 
     /**
      * [Node] with [data] and pointer to [next] is equivalent to [data] `::` [next].
+     *
+     * @param data data associated with this node.
+     * @param next next node.
+     * @param T the type of elements in the list.
      */
     data class Node<T>(val data: T, val next: FpList<T>) : FpList<T>()
 

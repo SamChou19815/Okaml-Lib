@@ -38,19 +38,20 @@ class FpSet<V : Comparable<V>> private constructor(private val m: FpMap<V, Unit>
     /**
      * [union] computes the union of this set and [another].
      */
-    fun union(another: FpSet<V>): FpSet<V> = reduce(acc = this) { acc, v -> acc.add(v) }
+    fun union(another: FpSet<V>): FpSet<V> = reduce(acc = another) { acc, v -> acc.add(v) }
 
     /**
      * [intersection] computes the intersection of this set and [another].
      */
-    fun intersection(another: FpSet<V>): FpSet<V> = reduce(acc = this) { acc, v ->
+    fun intersection(another: FpSet<V>): FpSet<V> = reduce(acc = another) { acc, v ->
         if (v in this) acc.add(v) else acc
     }
 
     /**
      * [minus] computes the set difference: this \ [another].
      */
-    operator fun minus(another: FpSet<V>): FpSet<V> = reduce(acc = this) { acc, v -> acc.remove(v) }
+    operator fun minus(another: FpSet<V>): FpSet<V> =
+            reduce(acc = another) { acc, v -> acc.remove(v) }
 
     /**
      * [isSubsetOf] checks whether this set is the subset of [another].
