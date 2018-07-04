@@ -115,32 +115,38 @@ class FpListTest {
     fun higherOrderFunctionsTest() {
         // empty list
         assertEquals(false, emptyList.exists { true })
-        assertEquals(true, emptyList.forAll { false })
+        assertEquals(true, emptyList.all { false })
         assertEquals(Unit, emptyList.forEach { })
-        assertEquals("", emptyList.reduceFromLeft(acc = "", f = String::plus))
-        assertEquals("", emptyList.reduceFromRight(init = "", f = String::plus))
+        assertEquals("", emptyList.fold(initial = "", operation = String::plus))
+        assertEquals("", emptyList.foldRight(initial = "", operation = String::plus))
         assertEquals(emptyList, emptyList.map { "Bad!" })
         // singleton list
         assertEquals(false, singletonList.exists { false })
         assertEquals(true, singletonList.exists { it == "hi" })
-        assertEquals(false, singletonList.forAll { false })
-        assertEquals(true, singletonList.forAll { it == "hi" })
+        assertEquals(false, singletonList.all { false })
+        assertEquals(true, singletonList.all { it == "hi" })
         assertEquals(Unit, singletonList.forEach { })
-        assertEquals("hi", singletonList.reduceFromLeft(acc = "", f = String::plus))
-        assertEquals("hi", singletonList.reduceFromRight(init = "", f = String::plus))
+        assertEquals("hi", singletonList.fold(initial = "", operation = String::plus))
+        assertEquals("hi", singletonList.foldRight(initial = "", operation = String::plus))
         assertEquals(FpList.singleton("bad"), singletonList.map { "bad" })
         // complex list
         assertEquals(false, complexList.exists { false })
         assertEquals(false, complexList.exists { it == "hi" })
         assertEquals(true, complexList.exists { it == "hello" })
         assertEquals(true, complexList.exists { it == "world" })
-        assertEquals(false, complexList.forAll { false })
-        assertEquals(false, complexList.forAll { it == "hi" })
-        assertEquals(true, complexList.forAll(String::isNotEmpty))
+        assertEquals(false, complexList.all { false })
+        assertEquals(false, complexList.all { it == "hi" })
+        assertEquals(true, complexList.all(String::isNotEmpty))
         assertEquals(Unit, complexList.forEach { })
-        assertEquals("helloworld", complexList.reduceFromLeft(acc = "", f = String::plus))
-        assertEquals("helloworld", complexList.reduceFromRight(init = "", f = String::plus))
-        assertEquals(FpList.create("HELLO", "WORLD"), complexList.map(f = String::toUpperCase))
+        assertEquals(
+                "helloworld", complexList.fold(initial = "", operation = String::plus)
+        )
+        assertEquals(
+                "worldhello", complexList.foldRight(initial = "", operation = String::plus)
+        )
+        assertEquals(
+                FpList.create("HELLO", "WORLD"), complexList.map(transform = String::toUpperCase)
+        )
     }
 
 }

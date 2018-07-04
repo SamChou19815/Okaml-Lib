@@ -3,6 +3,7 @@ package com.developersam.fp
 import junit.framework.TestCase.assertEquals
 import junit.framework.TestCase.assertNotNull
 import junit.framework.TestCase.assertNull
+import junit.framework.TestCase.assertTrue
 import org.junit.Test
 
 /**
@@ -70,6 +71,7 @@ class FpMapTest {
             val l2 = algorithmsPair.subList(fromIndex = 0, toIndex = i + 1).sortedWith(c)
             assertEquals(l1, l2)
             map = newMap
+            assertTrue(map.invariantHolds)
         }
         for (i in 0 until l) {
             val pair = algorithmsPair[i]
@@ -78,6 +80,7 @@ class FpMapTest {
             val l2 = algorithmsPair.subList(fromIndex = i + 1, toIndex = l).sortedWith(c)
             assertEquals(l1, l2)
             map = newMap
+            assertTrue(map.invariantHolds)
         }
         assertEquals(emptyMap, map)
     }
@@ -97,13 +100,13 @@ class FpMapTest {
     @Test
     fun existsTest() {
         // empty map
-        assertEquals(false, emptyMap.exists(f = always))
-        assertEquals(false, emptyMap.exists(f = eq))
-        assertEquals(false, emptyMap.exists(f = nEq))
+        assertEquals(false, emptyMap.exists(predicate = always))
+        assertEquals(false, emptyMap.exists(predicate = eq))
+        assertEquals(false, emptyMap.exists(predicate = nEq))
         // singleton map
-        assertEquals(true, singletonMap.exists(f = always))
-        assertEquals(true, singletonMap.exists(f = eq))
-        assertEquals(false, singletonMap.exists(f = nEq))
+        assertEquals(true, singletonMap.exists(predicate = always))
+        assertEquals(true, singletonMap.exists(predicate = eq))
+        assertEquals(false, singletonMap.exists(predicate = nEq))
     }
 
     /**
@@ -112,13 +115,13 @@ class FpMapTest {
     @Test
     fun forAllTest() {
         // empty map
-        assertEquals(true, emptyMap.forAll(f = never))
-        assertEquals(true, emptyMap.forAll(f = eq))
-        assertEquals(true, emptyMap.forAll(f = nEq))
+        assertEquals(true, emptyMap.all(predicate = never))
+        assertEquals(true, emptyMap.all(predicate = eq))
+        assertEquals(true, emptyMap.all(predicate = nEq))
         // singleton map
-        assertEquals(false, singletonMap.forAll(f = never))
-        assertEquals(true, singletonMap.forAll(f = eq))
-        assertEquals(false, singletonMap.forAll(f = nEq))
+        assertEquals(false, singletonMap.all(predicate = never))
+        assertEquals(true, singletonMap.all(predicate = eq))
+        assertEquals(false, singletonMap.all(predicate = nEq))
     }
 
     /**
@@ -127,15 +130,15 @@ class FpMapTest {
     @Test
     fun filterTest() {
         // empty map
-        assertEquals(emptyMap, emptyMap.filter(f = always))
-        assertEquals(emptyMap, emptyMap.filter(f = never))
-        assertEquals(emptyMap, emptyMap.filter(f = eq))
-        assertEquals(emptyMap, emptyMap.filter(f = nEq))
+        assertEquals(emptyMap, emptyMap.filter(predicate = always))
+        assertEquals(emptyMap, emptyMap.filter(predicate = never))
+        assertEquals(emptyMap, emptyMap.filter(predicate = eq))
+        assertEquals(emptyMap, emptyMap.filter(predicate = nEq))
         // singleton map
-        assertEquals(singletonMap, singletonMap.filter(f = always))
-        assertEquals(emptyMap, singletonMap.filter(f = never))
-        assertEquals(singletonMap, singletonMap.filter(f = eq))
-        assertEquals(emptyMap, singletonMap.filter(f = nEq))
+        assertEquals(singletonMap, singletonMap.filter(predicate = always))
+        assertEquals(emptyMap, singletonMap.filter(predicate = never))
+        assertEquals(singletonMap, singletonMap.filter(predicate = eq))
+        assertEquals(emptyMap, singletonMap.filter(predicate = nEq))
     }
 
     /**
@@ -144,15 +147,15 @@ class FpMapTest {
     @Test
     fun partitionTest() {
         // empty map
-        assertEquals(emptyMap to emptyMap, emptyMap.partition(f = always))
-        assertEquals(emptyMap to emptyMap, emptyMap.partition(f = never))
-        assertEquals(emptyMap to emptyMap, emptyMap.partition(f = eq))
-        assertEquals(emptyMap to emptyMap, emptyMap.partition(f = nEq))
+        assertEquals(emptyMap to emptyMap, emptyMap.partition(predicate = always))
+        assertEquals(emptyMap to emptyMap, emptyMap.partition(predicate = never))
+        assertEquals(emptyMap to emptyMap, emptyMap.partition(predicate = eq))
+        assertEquals(emptyMap to emptyMap, emptyMap.partition(predicate = nEq))
         // singleton map
-        assertEquals(singletonMap to emptyMap, singletonMap.partition(f = always))
-        assertEquals(emptyMap to singletonMap, singletonMap.partition(f = never))
-        assertEquals(singletonMap to emptyMap, singletonMap.partition(f = eq))
-        assertEquals(emptyMap to singletonMap, singletonMap.partition(f = nEq))
+        assertEquals(singletonMap to emptyMap, singletonMap.partition(predicate = always))
+        assertEquals(emptyMap to singletonMap, singletonMap.partition(predicate = never))
+        assertEquals(singletonMap to emptyMap, singletonMap.partition(predicate = eq))
+        assertEquals(emptyMap to singletonMap, singletonMap.partition(predicate = nEq))
     }
 
     /**

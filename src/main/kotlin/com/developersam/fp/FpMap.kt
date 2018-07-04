@@ -1,5 +1,8 @@
 package com.developersam.fp
 
+import java.util.Deque
+import java.util.LinkedList
+
 /**
  * [FpMap] is the functional map.
  *
@@ -54,27 +57,24 @@ sealed class FpMap<K : Comparable<K>, V> : Iterable<Pair<K, V>> {
         }
 
     /**
-     * [bstInvariantHolds] reports whether AVL invariant holds for the tree.
+     * [avlInvariantHolds] reports whether AVL invariant holds for the tree.
      */
     private val avlInvariantHolds: Boolean
         get() = when (this) {
             Leaf -> true
-            is Node<K, V> -> Math.abs(left.height - right.height) < 2
-                    && left.avlInvariantHolds
-                    && right.avlInvariantHolds
+            is Node<K, V> -> (Math.abs(left.height - right.height) < 2) &&
+                    left.avlInvariantHolds && right.avlInvariantHolds
         }
 
     /**
      * [invariantHolds] internally reports whether the invariant holds.
      */
-    internal val invariantHolds: Boolean
-        get() = bstInvariantHolds && avlInvariantHolds
+    internal val invariantHolds: Boolean get() = bstInvariantHolds && avlInvariantHolds
 
     /**
      * [isEmpty] reports whether this map is empty.
      */
-    val isEmpty: Boolean
-        get() = this == Leaf
+    val isEmpty: Boolean get() = this == Leaf
 
     /**
      * [height] returns height of the tree.
@@ -134,11 +134,15 @@ sealed class FpMap<K : Comparable<K>, V> : Iterable<Pair<K, V>> {
                     Node(left = left, key = key, value = value, right = right, height = height)
                 }
             } else if (c < 0) {
-                balance(left = left.put(key = key, value = value), right = right,
-                        key = this.key, value = this.value)
+                balance(
+                        left = left.put(key = key, value = value), right = right,
+                        key = this.key, value = this.value
+                )
             } else {
-                balance(left = left, right = right.put(key = key, value = value),
-                        key = this.key, value = this.value)
+                balance(
+                        left = left, right = right.put(key = key, value = value),
+                        key = this.key, value = this.value
+                )
             }
         }
     }
@@ -150,8 +154,9 @@ sealed class FpMap<K : Comparable<K>, V> : Iterable<Pair<K, V>> {
         Leaf -> empty()
         is Node<K, V> -> when (left) {
             Leaf -> right
-            else -> balance(left = left.removeFirstBinding(), right = right,
-                    key = key, value = value)
+            else -> balance(
+                    left = left.removeFirstBinding(), right = right, key = key, value = value
+            )
         }
     }
 
@@ -168,76 +173,110 @@ sealed class FpMap<K : Comparable<K>, V> : Iterable<Pair<K, V>> {
                     right == Leaf -> left
                     else -> {
                         val rightMin = right.firstBinding!!
-                        balance(left = left, right = right.removeFirstBinding(),
-                                key = rightMin.first, value = rightMin.second)
+                        balance(
+                                left = left, right = right.removeFirstBinding(),
+                                key = rightMin.first, value = rightMin.second
+                        )
                     }
                 }
-                c < 0 -> balance(left = left.remove(key = key), right = right,
-                        key = this.key, value = this.value)
-                else -> balance(left = left, right = right.remove(key = key),
-                        key = this.key, value = this.value)
+                c < 0 -> balance(
+                        left = left.remove(key = key), right = right,
+                        key = this.key, value = this.value
+                )
+                else -> balance(
+                        left = left, right = right.remove(key = key),
+                        key = this.key, value = this.value
+                )
             }
         }
     }
 
     /**
-     * [forEach] applies [f] to every key-value pair in increasing order.
+     * [forEach] applies [action] to every key-value pair in increasing order.
      */
-    fun forEach(f: (K, V) -> Unit): Unit = when (this) {
+    fun forEach(action: (K, V) -> Unit): Unit = when (this) {
         Leaf -> Unit
         is Node<K, V> -> {
-            left.forEach(f = f)
-            f(key, value)
-            right.forEach(f = f)
+            left.forEach(action = action)
+            action(key, value)
+            right.forEach(action = action)
         }
     }
 
     /**
-     * [reduce] reduces the map to a value by applying [f] in increasing order, with the starting
-     * accumulator [acc].
+     * [fold] reduces the map to a value by applying [operation] in increasing order, with the
+     * starting accumulator [initial].
      */
-    fun <R> reduce(acc: R, f: (K, V, R) -> R): R = when (this) {
-        Leaf -> acc
-        is Node<K, V> -> right.reduce(acc = f(key, value, left.reduce(acc = acc, f = f)), f = f)
+    fun <R> fold(initial: R, operation: (K, V, R) -> R): R = when (this) {
+        Leaf -> initial
+        is Node<K, V> -> right.fold(
+                initial = operation(key, value, left.fold(initial, operation)),
+                operation = operation
+        )
     }
 
     /**
-     * [exists] checks whether [f] is satisfied by at least one key-value pair.
+     * [exists] checks whether [predicate] is satisfied by at least one key-value pair.
      */
-    fun exists(f: (K, V) -> Boolean): Boolean = when (this) {
+    fun exists(predicate: (K, V) -> Boolean): Boolean = when (this) {
         Leaf -> false
-        is Node<K, V> -> f(key, value) || left.exists(f = f) || right.exists(f = f)
-    }
-
-    /**
-     * [forAll] checks whether [f] is satisfied by all key-value pairs.
-     */
-    fun forAll(f: (K, V) -> Boolean): Boolean = when (this) {
-        Leaf -> true
-        is Node<K, V> -> f(key, value) && left.forAll(f = f) && right.forAll(f = f)
-    }
-
-    /**
-     * [filter] creates a new map with all the key-value pairs that satisfies [f].
-     */
-    fun filter(f: (K, V) -> Boolean): FpMap<K, V> = reduce(acc = empty()) { k, v, acc ->
-        if (f(k, v)) {
-            acc.put(key = k, value = v)
-        } else {
-            acc
+        is Node<K, V> -> {
+            val stack: Deque<Node<K, V>> = LinkedList()
+            stack.addLast(this)
+            var exists = false
+            while (stack.isNotEmpty()) {
+                val node = stack.pollLast()
+                if (predicate(node.key, node.value)) {
+                    exists = true
+                    break
+                }
+                (node.right as? Node<K, V>)?.run { stack.addLast(this) }
+                (node.left as? Node<K, V>)?.run { stack.addLast(this) }
+            }
+            exists
         }
     }
+
+    /**
+     * [all] checks whether [predicate] is satisfied by all key-value pairs.
+     */
+    fun all(predicate: (K, V) -> Boolean): Boolean = when (this) {
+        Leaf -> true
+        is Node<K, V> -> {
+            val stack: Deque<Node<K, V>> = LinkedList()
+            stack.addLast(this)
+            var all = true
+            while (stack.isNotEmpty()) {
+                val node = stack.pollLast()
+                if (!predicate(node.key, node.value)) {
+                    all = false
+                    break
+                }
+                (node.right as? Node<K, V>)?.run { stack.addLast(this) }
+                (node.left as? Node<K, V>)?.run { stack.addLast(this) }
+            }
+            all
+        }
+    }
+
+    /**
+     * [filter] creates a new map with all the key-value pairs that satisfies [predicate].
+     */
+    inline fun filter(crossinline predicate: (K, V) -> Boolean): FpMap<K, V> =
+            fold(initial = empty()) { k, v, acc ->
+                if (predicate(k, v)) acc.put(key = k, value = v) else acc
+            }
 
     /**
      * [partition] creates a pair of two maps where the first one contains all the key-value pairs
-     * that satisfy [f], and the second one contains the rest.
+     * that satisfy [predicate], and the second one contains the rest.
      */
-    fun partition(f: (K, V) -> Boolean): Pair<FpMap<K, V>, FpMap<K, V>> =
-            reduce(acc = Pair(first = empty(), second = empty())) { k, v, acc ->
-                if (f(k, v)) {
-                    Pair(first = acc.first.put(key = k, value = v), second = acc.second)
+    inline fun partition(crossinline predicate: (K, V) -> Boolean): Pair<FpMap<K, V>, FpMap<K, V>> =
+            fold(initial = Pair(first = empty(), second = empty())) { k, v, acc ->
+                if (predicate(k, v)) {
+                    acc.first.put(key = k, value = v) to acc.second
                 } else {
-                    Pair(first = acc.first, second = acc.second.put(key = k, value = v))
+                    acc.first to acc.second.put(key = k, value = v)
                 }
             }
 
@@ -246,24 +285,43 @@ sealed class FpMap<K : Comparable<K>, V> : Iterable<Pair<K, V>> {
      * The list is sorted according to keys.
      */
     val bindings: FpList<Pair<K, V>>
-        get() = reduce(acc = FpList.empty()) { k, v, acc -> (k to v) cons acc }
+        get() = fold<FpList<Pair<K, V>>>(initial = FpList.empty()) { k, v, l -> (k to v) cons l }
+                .reverse
 
     /**
      * [firstBinding] returns the optionally exist first (min) bindings as a key-value pair.
      */
     val firstBinding: Pair<K, V>?
-        get() = when (this) {
-            Leaf -> null
-            is Node<K, V> -> if (left == Leaf) key to value else left.firstBinding
+        get() {
+            var curr = this
+            if (curr == Leaf) {
+                return null
+            }
+            while (true) {
+                val (left, key, value) = curr as Node<K, V>
+                if (left == Leaf) {
+                    return key to value
+                }
+                curr = left
+            }
         }
 
     /**
      * [lastBinding] returns the optionally exist last (max) bindings as a key-value pair.
      */
     val lastBinding: Pair<K, V>?
-        get() = when (this) {
-            Leaf -> null
-            is Node<K, V> -> if (right == Leaf) key to value else right.lastBinding
+        get() {
+            var curr = this
+            if (curr == Leaf) {
+                return null
+            }
+            while (true) {
+                val (_, key, value, right) = curr as Node<K, V>
+                if (right == Leaf) {
+                    return key to value
+                }
+                curr = right
+            }
         }
 
     /**
@@ -275,28 +333,29 @@ sealed class FpMap<K : Comparable<K>, V> : Iterable<Pair<K, V>> {
     }
 
     /**
-     * [mapByKey] creates a new map where each key is replaced by a new one computed by applying [f]
-     * to the old key.
+     * [mapByKey] creates a new map where each key is replaced by a new one computed by applying
+     * [transform] to the old key.
      */
-    fun <K2 : Comparable<K2>> mapByKey(f: (K) -> K2): FpMap<K2, V> =
-            reduce(acc = empty()) { k, v, acc -> acc.put(key = f(k), value = v) }
+    inline fun <K2 : Comparable<K2>> mapByKey(crossinline transform: (K) -> K2): FpMap<K2, V> =
+            fold(initial = empty()) { k, v, acc -> acc.put(key = transform(k), value = v) }
 
     /**
      * [mapByValue] creates a new map where each value is replaced by a new one computed by
-     * applying [f] to the old value.
+     * applying [transform] to the old value.
      */
-    fun <V2> mapByValue(f: (V) -> V2): FpMap<K, V2> =
-            reduce(acc = empty()) { k, v, acc -> acc.put(key = k, value = f(v)) }
+    inline fun <V2> mapByValue(crossinline transform: (V) -> V2): FpMap<K, V2> =
+            fold(initial = empty()) { k, v, acc -> acc.put(key = k, value = transform(v)) }
 
     /**
      * [mapByKeyValuePair] creates a new map where each key-value pair is replaced by a new pair
-     * computed by applying [f] to the old pair.
+     * computed by applying [transform] to the old pair.
      */
-    fun <K2 : Comparable<K2>, V2> mapByKeyValuePair(f: (K, V) -> Pair<K2, V2>): FpMap<K2, V2> =
-            reduce(acc = empty()) { k, v, acc ->
-                val result = f(k, v)
-                acc.put(key = result.first, value = result.second)
-            }
+    inline fun <K2 : Comparable<K2>, V2> mapByKeyValuePair(
+            crossinline transform: (K, V) -> Pair<K2, V2>
+    ): FpMap<K2, V2> = fold(initial = empty()) { k, v, acc ->
+        val result = transform(k, v)
+        acc.put(key = result.first, value = result.second)
+    }
 
     final override fun toString(): String = map { (k, v) -> "($k, $v)" }.toString()
 
@@ -331,18 +390,19 @@ sealed class FpMap<K : Comparable<K>, V> : Iterable<Pair<K, V>> {
          * [create] creates a map from the given [pairs] in list.
          */
         fun <K : Comparable<K>, V> create(pairs: FpList<Pair<K, V>>): FpMap<K, V> =
-                pairs.reduceFromLeft(acc = empty()) { acc, (key, value) -> acc.put(key, value) }
+                pairs.fold(initial = empty()) { acc, (key, value) -> acc.put(key, value) }
 
         /**
          * [balance] tries to balance the AVL tree with the new [left] or [right] branch and the
          * old key value pair as [key] and [value].
          */
-        private fun <K : Comparable<K>, V> balance(left: FpMap<K, V>, right: FpMap<K, V>,
-                                                   key: K, value: V): FpMap<K, V> {
+        private fun <K : Comparable<K>, V> balance(
+                left: FpMap<K, V>, right: FpMap<K, V>, key: K, value: V
+        ): FpMap<K, V> {
             val leftHeight = left.height
             val rightHeight = right.height
             return when {
-                leftHeight > rightHeight + 2 -> when (left) {
+                leftHeight >= rightHeight + 2 -> when (left) {
                     Leaf -> throw Error("Impossible")
                     is Node<K, V> -> {
                         val leftLeft = left.left
@@ -370,7 +430,7 @@ sealed class FpMap<K : Comparable<K>, V> : Iterable<Pair<K, V>> {
                         }
                     }
                 }
-                rightHeight > leftHeight + 2 -> when (right) {
+                rightHeight >= leftHeight + 2 -> when (right) {
                     Leaf -> throw Error("Impossible")
                     is Node<K, V> -> {
                         val rightLeft = right.left

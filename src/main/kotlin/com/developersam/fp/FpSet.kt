@@ -3,22 +3,20 @@ package com.developersam.fp
 /**
  * [FpSet] is the functional set.
  *
- * @param m the backing map for the set.
+ * @property m the backing map for the set.
  * @param V the type of values in the set.
  */
-class FpSet<V : Comparable<V>> private constructor(private val m: FpMap<V, Unit>) : Iterable<V> {
+class FpSet<V : Comparable<V>>(val m: FpMap<V, Unit>) : Iterable<V> {
 
     /**
      * [isEmpty] reports whether this set is empty.
      */
-    val isEmpty: Boolean
-        get() = m.isEmpty
+    val isEmpty: Boolean get() = m.isEmpty
 
     /**
      * [size] reports the size of the set.
      */
-    val size: Int
-        get() = m.size
+    val size: Int get() = m.size
 
     /**
      * [contains] reports whether the set contains [value].
@@ -38,12 +36,12 @@ class FpSet<V : Comparable<V>> private constructor(private val m: FpMap<V, Unit>
     /**
      * [union] computes the union of this set and [another].
      */
-    fun union(another: FpSet<V>): FpSet<V> = reduce(acc = another) { acc, v -> acc.add(v) }
+    fun union(another: FpSet<V>): FpSet<V> = fold(initial = another) { acc, v -> acc.add(v) }
 
     /**
      * [intersection] computes the intersection of this set and [another].
      */
-    fun intersection(another: FpSet<V>): FpSet<V> = reduce(acc = another) { acc, v ->
+    fun intersection(another: FpSet<V>): FpSet<V> = fold(initial = another) { acc, v ->
         if (v in this) acc.add(v) else acc
     }
 
@@ -51,7 +49,7 @@ class FpSet<V : Comparable<V>> private constructor(private val m: FpMap<V, Unit>
      * [minus] computes the set difference: this \ [another].
      */
     operator fun minus(another: FpSet<V>): FpSet<V> =
-            reduce(acc = another) { acc, v -> acc.remove(v) }
+            fold(initial = another) { acc, v -> acc.remove(v) }
 
     /**
      * [isSubsetOf] checks whether this set is the subset of [another].
@@ -59,63 +57,65 @@ class FpSet<V : Comparable<V>> private constructor(private val m: FpMap<V, Unit>
     fun isSubsetOf(another: FpSet<V>): Boolean = forAll { it in another }
 
     /**
-     * [map] maps each element in the set to another value by applying [f] to each value.
+     * [map] maps each element in the set to another value by applying [transform] to each value.
      */
-    fun <T : Comparable<T>> map(f: (V) -> T): FpSet<T> = FpSet(m = m.mapByKey(f = f))
+    inline fun <T : Comparable<T>> map(crossinline transform: (V) -> T): FpSet<T> =
+            FpSet(m = m.mapByKey(transform = transform))
 
     /**
-     * [forEach] applies [f] to every value in increasing order.
+     * [forEach] applies [action] to every value in increasing order.
      */
-    fun forEach(f: (V) -> Unit): Unit = m.forEach { v, _ -> f(v) }
+    inline fun forEach(crossinline action: (V) -> Unit): Unit = m.forEach { v, _ -> action(v) }
 
     /**
-     * [reduce] reduces the set to a value by applying [f] in increasing order, with the starting
-     * accumulator [acc].
+     * [fold] reduces the set to a value by applying [operation] in increasing order, with the
+     * starting accumulator [initial].
      */
-    fun <R> reduce(acc: R, f: (R, V) -> R): R = m.reduce(acc = acc) { v, _, a -> f(a, v) }
+    inline fun <R> fold(initial: R, crossinline operation: (R, V) -> R): R =
+            m.fold(initial = initial) { v, _, a -> operation(a, v) }
 
     /**
-     * [exists] checks whether [f] is satisfied by at least one value.
+     * [exists] checks whether [predicate] is satisfied by at least one value.
      */
-    fun exists(f: (V) -> Boolean): Boolean = m.exists { v, _ -> f(v) }
+    inline fun exists(crossinline predicate: (V) -> Boolean): Boolean =
+            m.exists { v, _ -> predicate(v) }
 
     /**
-     * [forAll] checks whether [f] is satisfied by all values.
+     * [forAll] checks whether [predicate] is satisfied by all values.
      */
-    fun forAll(f: (V) -> Boolean): Boolean = m.forAll { v, _ -> f(v) }
+    inline fun forAll(crossinline predicate: (V) -> Boolean): Boolean =
+            m.all { v, _ -> predicate(v) }
 
     /**
-     * [filter] creates a new set with all the values that satisfies [f].
+     * [filter] creates a new set with all the values that satisfies [predicate].
      */
-    fun filter(f: (V) -> Boolean): FpSet<V> = FpSet(m = m.filter { v, _ -> f(v) })
+    inline fun filter(crossinline predicate: (V) -> Boolean): FpSet<V> =
+            FpSet(m = m.filter { v, _ -> predicate(v) })
 
     /**
      * [partition] creates a pair of two sets where the first one contains all the values that
-     * satisfy [f], and the second one contains the rest.
+     * satisfy [predicate], and the second one contains the rest.
      */
-    fun partition(f: (V) -> Boolean): Pair<FpSet<V>, FpSet<V>> {
-        val p = m.partition { v, _ -> f(v) }
-        return FpSet(m = p.first) to FpSet(m = p.second)
+    inline fun partition(crossinline predicate: (V) -> Boolean): Pair<FpSet<V>, FpSet<V>> {
+        val (first, second) = m.partition { v, _ -> predicate(v) }
+        return FpSet(m = first) to FpSet(m = second)
     }
 
     /**
      * [elements] returns the list of all values of the given set.
      * The list is sorted according to keys.
      */
-    val elements: FpList<V>
-        get() = m.bindings.map { it.first }
+    val elements: FpList<V> get() = m.bindings.map { it.first }
 
     /**
      * [minElement] returns the optionally exist minimum element.
      */
-    val minElement: V?
-        get() = m.firstBinding?.first
+    val minElement: V? get() = m.firstBinding?.first
 
     /**
      * [maxElement] returns the optionally exist maximum element.
      */
-    val maxElement: V?
-        get() = m.lastBinding?.first
+    val maxElement: V? get() = m.lastBinding?.first
 
     /**
      * [peek] returns an unspecified value in the set, or `null` is the set is empty.
@@ -155,7 +155,7 @@ class FpSet<V : Comparable<V>> private constructor(private val m: FpMap<V, Unit>
          * [create] creates a set from the given [list].
          */
         fun <V : Comparable<V>> create(list: FpList<V>): FpSet<V> =
-                list.reduceFromLeft(acc = empty()) { acc, v -> acc.add(value = v) }
+                list.fold(initial = empty()) { acc, v -> acc.add(value = v) }
 
     }
 

@@ -64,14 +64,12 @@ sealed class FpList<out T> : Iterable<T> {
     /**
      * [isEmpty] reports whether this list is empty.
      */
-    val isEmpty: Boolean
-        get() = this == Nil
+    val isEmpty: Boolean get() = this == Nil
 
     /**
      * [size] returns the size of the list.
      */
-    val size: Int
-        get() = reduceFromLeft(acc = 0) { acc, _ -> acc + 1 }
+    val size: Int get() = fold(initial = 0) { acc, _ -> acc + 1 }
 
     /**
      * [head] returns the head of the list, or throws [NotFoundError] if the list is empty.
@@ -95,64 +93,83 @@ sealed class FpList<out T> : Iterable<T> {
      * [reverse] is the reverse of the list.
      */
     val reverse: FpList<T>
-        get() = when (this) {
-            Nil -> Nil
-            is Node<T> -> reduceFromLeft(acc = Nil as FpList<T>) { acc, data ->
-                data cons acc
+        get() = fold(initial = Nil as FpList<T>) { acc, data -> data cons acc }
+
+    /**
+     * [map] applies [transform] to each elements in the list to produce a new list.
+     */
+    fun <R> map(transform: (T) -> R): FpList<R> = when (this) {
+        FpList.Nil -> Nil
+        is Node<T> -> Node(data = transform(data), next = next.map(transform))
+    }
+
+    /**
+     * [fold] reduces the list to a value from left, with the accumulator initialized to
+     * be [initial] and a reducer [operation].
+     */
+    inline fun <reified R> fold(initial: R, crossinline operation: (R, T) -> R): R {
+        var curr = this
+        var acc = initial
+        while (curr != Nil) {
+            val (data, next) = curr as Node<T>
+            acc = operation(acc, data)
+            curr = next
+        }
+        return acc
+    }
+
+    /**
+     * [foldRight] reduces the list to a value from right, with the initial value [initial] and
+     * a reducer [operation].
+     * Not tail-recursive.
+     */
+    fun <R> foldRight(initial: R, operation: (R, T) -> R): R = when (this) {
+        Nil -> initial
+        is Node<T> -> operation(
+                next.foldRight(initial = initial, operation = operation), data
+        )
+    }
+
+    /**
+     * [forEach] applies [action] to each of the elements in the list.
+     */
+    inline fun forEach(crossinline action: (T) -> Unit) {
+        var curr = this
+        while (curr != Nil) {
+            val (data, next) = curr as Node<T>
+            action(data)
+            curr = next
+        }
+    }
+
+    /**
+     * [all] checks whether [predicate] is satisfied by all elements.
+     */
+    inline fun all(crossinline predicate: (T) -> Boolean): Boolean {
+        var curr = this
+        while (curr != Nil) {
+            val (data, next) = curr as Node<T>
+            if (!predicate(data)) {
+                return false
             }
+            curr = next
         }
-
-    /**
-     * [map] applies [f] to each elements in the list to produce a new list.
-     */
-    fun <R> map(f: (T) -> R): FpList<R> = when (this) {
-        Nil -> Nil
-        is Node<T> -> Node(data = f(data), next = next.map(f))
+        return true
     }
 
     /**
-     * [reduceFromLeft] reduces the list to a value from left, with the accumulator initialized to
-     * be [acc] and a reducer [f].
+     * [exists] checks whether [predicate] is satisfied by at least one element.
      */
-    fun <R> reduceFromLeft(acc: R, f: (R, T) -> R): R = when (this) {
-        Nil -> acc
-        is Node<T> -> next.reduceFromLeft(acc = f(acc, data), f = f)
-    }
-
-    /**
-     * [reduceFromLeft] reduces the list to a value from right, with the initial value [init] and
-     * a reducer [f].
-     */
-    fun <R> reduceFromRight(init: R, f: (T, R) -> R): R = when (this) {
-        Nil -> init
-        is Node<T> -> f(data, next.reduceFromRight(init = init, f = f))
-    }
-
-    /**
-     * [forEach] applies [f] to each of the elements in the list.
-     */
-    fun forEach(f: (T) -> Unit): Unit = when (this) {
-        Nil -> Unit
-        is Node<T> -> {
-            f(data)
-            next.forEach(f = f)
+    inline fun exists(crossinline predicate: (T) -> Boolean): Boolean {
+        var curr = this
+        while (curr != Nil) {
+            val (data, next) = curr as Node<T>
+            if (predicate(data)) {
+                return true
+            }
+            curr = next
         }
-    }
-
-    /**
-     * [forAll] checks whether [f] is satisfied by all elements.
-     */
-    fun forAll(f: (T) -> Boolean): Boolean = when (this) {
-        Nil -> true
-        is Node<T> -> if (!f(data)) false else next.forAll(f = f)
-    }
-
-    /**
-     * [exists] checks whether [f] is satisfied by at least one element.
-     */
-    fun exists(f: (T) -> Boolean): Boolean = when (this) {
-        Nil -> false
-        is Node<T> -> if (f(data)) true else next.exists(f = f)
+        return false
     }
 
     final override fun toString(): String = toList().toString()
@@ -166,9 +183,10 @@ infix fun <T> T.cons(list: FpList<T>): FpList<T> = FpList.Node(data = this, next
 
 /**
  * [append] creates a list with [another] appended to it.
+ * Not tail-recursive.
  */
 fun <T> FpList<T>.append(another: FpList<T>): FpList<T> =
-        reduceFromRight(init = another) { d, l -> d cons l }
+        foldRight(initial = another) { list, data -> data cons list }
 
 /**
  * [flatten] flattens a list of lists.
@@ -183,11 +201,17 @@ val <T> FpList<FpList<T>>.flatten: FpList<T>
 /**
  * [contains] checks whether the given [element] is in the list.
  */
-operator fun <T> FpList<T>.contains(element: T): Boolean = when (this) {
-    FpList.Nil -> false
-    is FpList.Node<T> -> if (element == data) true else next.contains(element = element)
+operator fun <T> FpList<T>.contains(element: T): Boolean {
+    var curr = this
+    while (curr != FpList.Nil) {
+        val (data, next) = curr as FpList.Node<T>
+        if (element == data) {
+            return true
+        }
+        curr = next
+    }
+    return false
 }
-
 
 /**
  * [FpList.toArrayList] converts the list to array list.
